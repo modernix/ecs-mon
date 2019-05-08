@@ -1,4 +1,4 @@
-__version__ = '0.0.1'
+__version__ = '0.0.2'
 __title__ = 'es-mon'
 __description__ = 'A CLI to easily monitor AWS ECS Service'
 __url__ = 'https://github.com/modernix/es-mon'

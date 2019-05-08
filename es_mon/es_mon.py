@@ -46,11 +46,15 @@ def display_svc_tsk(task_list, profile_name = None):
     cluster='linux-int',
     tasks=task_list
     )
-    tsk_table = PrettyTable(['Task ID', 'Task Definition', 'Status', 'Image Tag'])
+    tsk_table = PrettyTable(['Task ID', 'Task Definition', 
+                            'Status', 'Image Tag'])
     index=0
     for i in response['tasks']:
         img_tag = get_tsk_def_img_tag(i['taskDefinitionArn'], profile_name)
-        tsk_table.add_row([task_list[index],i['taskDefinitionArn'].split("/", 1)[-1], i['lastStatus'], img_tag])
+        tsk_table.add_row([task_list[index],
+                            i['taskDefinitionArn'].split("/", 1)[-1],
+                            i['lastStatus'], img_tag]
+                        )
         index+=1
     print(tsk_table)
 
@@ -61,8 +65,15 @@ def get_svc_alb_tg_arn(cluster_n, svc_n, profile_name = None):
     cluster=cluster_n,
     services=[svc_n]
     )
-    return response['services'][0]['loadBalancers'][0]['targetGroupArn']
-
+    if not response['services']:
+        print(f"Cannot find ECS service: {svc_n}")
+        sys.exit(1)
+    try:
+        return response['services'][0]['loadBalancers'][0]['targetGroupArn']
+    except IndexError as error:
+        print("This service does not connect to a load balanacer.")
+        print(error)
+        sys.exit(1)
 
 def get_svc_alb_healthccheck_info(tg_arn, profile_name = None):
     """return alb arn, healthpath, and protocol"""
@@ -118,9 +129,11 @@ def main():
         sys.exit(1)
     get_aws_account_id(profile_name=args.profile)
     if args.alb:
-      svc_tg_arn = get_svc_alb_tg_arn(args.cluster,args.svc, profile_name=args.profile)
-      alb_info = get_svc_alb_healthccheck_info(svc_tg_arn, profile_name=args.profile)
-      print(f"{alb_info['HealthCheckProtocol'].lower()}://{alb_info['DNSName']}{alb_info['HealthCheckPath']}")
+        svc_tg_arn = get_svc_alb_tg_arn(args.cluster,args.svc,
+                                    profile_name=args.profile)
+        alb_info = get_svc_alb_healthccheck_info(svc_tg_arn,
+                                            profile_name=args.profile)
+        print(f"{alb_info['HealthCheckProtocol'].lower()}://{alb_info['DNSName']}{alb_info['HealthCheckPath']}")
     tasks = get_svc_tasks_list(args.cluster, args.svc, profile_name=args.profile)
     display_svc_tsk(tasks, profile_name=args.profile)
 
