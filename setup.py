@@ -12,7 +12,7 @@ requires = [
 
 here = os.path.abspath(os.path.dirname(__file__))
 about = {}
-with open(os.path.join(here, 'es_mon', 'version.py'), 'r') as f:
+with open(os.path.join(here, 'ecs_mon', 'version.py'), 'r') as f:
     exec(f.read(), about)
 
 # Get the long description from the relevant file
@@ -36,7 +36,7 @@ setup(name=about['__title__'],
       packages=find_packages(exclude=['pypandoc']),
       entry_points={
         "console_scripts": [
-            'es-mon = es_mon.es_mon:main'
+            'ecs-mon = ecs_mon.ecs_mon:main'
         ]
         },
       license=about['__license__'],

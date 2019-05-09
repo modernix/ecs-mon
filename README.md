@@ -1,13 +1,13 @@
-# ECS Service Monitor (es-mon)
+# ECS Service Monitor (ecs-mon)
 
 ## Installation
 ```shell
-pip install es-mon
+pip install ecs-mon
 ```
 
 ## Usage
 ```shell
-es-mon --svc my-service --cluster linux --alb --profile myAWSprofile
+ecs-mon --svc my-service --cluster linux --alb --profile myAWSprofile
 ```
 
 ## Publishing Updates to PyPi
@@ -15,8 +15,8 @@ es-mon --svc my-service --cluster linux --alb --profile myAWSprofile
 For the maintainer - to publish an updated version of ssm-search, increment the version number in version.py and run the following:
 
 ```shell
-docker build -f ./Dockerfile.buildenv -t es-mon:build .
-docker run --rm -it --entrypoint make es-mon:build publish
+docker build -f ./Dockerfile.buildenv -t ecs-mon:build .
+docker run --rm -it --entrypoint make ecs-mon:build publish
 ```
 
 At the prompts, enter the username and password to the pypi.org repo.

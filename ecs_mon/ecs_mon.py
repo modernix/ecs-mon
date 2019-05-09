@@ -66,7 +66,7 @@ def get_svc_alb_tg_arn(cluster_n, svc_n, profile_name = None):
     services=[svc_n]
     )
     if not response['services']:
-        print(f"Cannot find ECS service: {svc_n}")
+        print("Cannot find ECS service: {}".format(svc_n))
         sys.exit(1)
     try:
         return response['services'][0]['loadBalancers'][0]['targetGroupArn']
@@ -98,7 +98,7 @@ def get_aws_account_id(profile_name = None):
     """print aws account"""
     client = get_aws_client("sts", profile_name=profile_name)
     account_id = client.get_caller_identity()["Account"]
-    print(f"account_id: {account_id}")
+    print("account_id: {}".format(account_id))
 
 
 def parse_args():
@@ -118,12 +118,12 @@ def parse_args():
 
 def main():
     args = parse_args()
-    print(f"service name: {args.svc}")
-    print(f"cluster name: {args.cluster}")
+    print("service name: {}".format(args.svc))
+    print("cluster name: {}".format(args.cluster))
     if not args.profile:
       if 'AWS_PROFILE' in os.environ:
         args.profile=os.environ['AWS_PROFILE']
-        print(f"aws profile: {args.profile}")
+        print("aws profile: {}".format(args.profile))
       else:
         print("Please provide an AWS profile or set AWS_PROFILE env")
         sys.exit(1)
@@ -133,7 +133,9 @@ def main():
                                     profile_name=args.profile)
         alb_info = get_svc_alb_healthccheck_info(svc_tg_arn,
                                             profile_name=args.profile)
-        print(f"{alb_info['HealthCheckProtocol'].lower()}://{alb_info['DNSName']}{alb_info['HealthCheckPath']}")
+        print("{}://{}{}".format(alb_info['HealthCheckProtocol'].lower(),
+                                alb_info['DNSName'],
+                                alb_info['HealthCheckPath']))
     tasks = get_svc_tasks_list(args.cluster, args.svc, profile_name=args.profile)
     display_svc_tsk(tasks, profile_name=args.profile)
 
