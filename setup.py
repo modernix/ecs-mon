@@ -6,8 +6,8 @@ from setuptools import setup, find_packages
 
 requires = [
     'boto3>=1.7.20, <2.0',
-    'botocore>=1.10.20, <2.0'
-    'prettytable>=0.7.2'
+    'botocore>=1.10.20, <2.0',
+    'prettytable>=0.7.2, <1.0.0'
 ]
 
 here = os.path.abspath(os.path.dirname(__file__))

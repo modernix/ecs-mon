@@ -21,6 +21,11 @@ docker run --rm -it --entrypoint make ecs-mon:build publish
 
 At the prompts, enter the username and password to the pypi.org repo.
 
+## How to build
+```shell
+make build
+```
+
 ## License
 
 MIT License

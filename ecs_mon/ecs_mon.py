@@ -94,6 +94,25 @@ def get_svc_alb_healthccheck_info(tg_arn, profile_name = None):
     }
     
 
+def list_svc(cluster_n, profile_name = None):
+    """list all services from a cluster"""
+    client = get_aws_client("ecs", profile_name=profile_name)
+    try:
+        response = client.list_services(
+        cluster=cluster_n,
+        maxResults=100
+        )
+        if response['serviceArns']:
+            print
+            for svc in response['serviceArns']:
+                print(svc.split("/", 1)[-1])
+        else:
+            print("The provided ECS cluster does not have ECS services.")
+    except Exception as error:
+        print("Cannot find ECS services from the provided ECS cluster")
+        print(error)
+
+
 def get_aws_account_id(profile_name = None):
     """print aws account"""
     client = get_aws_client("sts", profile_name=profile_name)
@@ -118,8 +137,6 @@ def parse_args():
 
 def main():
     args = parse_args()
-    print("service name: {}".format(args.svc))
-    print("cluster name: {}".format(args.cluster))
     if not args.profile:
       if 'AWS_PROFILE' in os.environ:
         args.profile=os.environ['AWS_PROFILE']
@@ -128,6 +145,9 @@ def main():
         print("Please provide an AWS profile or set AWS_PROFILE env")
         sys.exit(1)
     get_aws_account_id(profile_name=args.profile)
+    if args.cluster and args.svc is None:
+        list_svc(args.cluster, profile_name=args.profile)
+
     if args.alb:
         svc_tg_arn = get_svc_alb_tg_arn(args.cluster,args.svc,
                                     profile_name=args.profile)
@@ -136,8 +156,11 @@ def main():
         print("{}://{}{}".format(alb_info['HealthCheckProtocol'].lower(),
                                 alb_info['DNSName'],
                                 alb_info['HealthCheckPath']))
-    tasks = get_svc_tasks_list(args.cluster, args.svc, profile_name=args.profile)
-    display_svc_tsk(tasks, profile_name=args.profile)
+    elif args.svc:
+        print("service name: {}".format(args.svc))
+        print("cluster name: {}".format(args.cluster))
+        tasks = get_svc_tasks_list(args.cluster, args.svc, profile_name=args.profile)
+        display_svc_tsk(tasks, profile_name=args.profile)
 
 
 if __name__ == "__main__":
