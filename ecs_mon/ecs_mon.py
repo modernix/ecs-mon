@@ -127,7 +127,7 @@ def parse_args():
                         help='The AWS profile to run this request under.' )
     parser.add_argument('--svc',
                         help='ecs svc name')
-    parser.add_argument('--cluster',
+    parser.add_argument('--cluster', required=True,
                         help='ecs cluster name')
     parser.add_argument('--alb', action='store_true',
                         help='ecs service with alb ')
@@ -145,23 +145,23 @@ def main():
         print("Please provide an AWS profile or set AWS_PROFILE env")
         sys.exit(1)
     get_aws_account_id(profile_name=args.profile)
-    if args.cluster and args.svc is None:
-        list_svc(args.cluster, profile_name=args.profile)
 
-    if args.alb:
-        svc_tg_arn = get_svc_alb_tg_arn(args.cluster,args.svc,
+    if args.svc:
+        if args.alb:
+            svc_tg_arn = get_svc_alb_tg_arn(args.cluster,args.svc,
                                     profile_name=args.profile)
-        alb_info = get_svc_alb_healthccheck_info(svc_tg_arn,
+            alb_info = get_svc_alb_healthccheck_info(svc_tg_arn,
                                             profile_name=args.profile)
-        print("{}://{}{}".format(alb_info['HealthCheckProtocol'].lower(),
+            print("{}://{}{}".format(alb_info['HealthCheckProtocol'].lower(),
                                 alb_info['DNSName'],
                                 alb_info['HealthCheckPath']))
-    elif args.svc:
         print("service name: {}".format(args.svc))
         print("cluster name: {}".format(args.cluster))
-        tasks = get_svc_tasks_list(args.cluster, args.svc, profile_name=args.profile)
+        tasks = get_svc_tasks_list(args.cluster, args.svc,
+                                    profile_name=args.profile)
         display_svc_tsk(tasks, profile_name=args.profile)
-
+    else:
+        list_svc(args.cluster, profile_name=args.profile)
 
 if __name__ == "__main__":
     main()

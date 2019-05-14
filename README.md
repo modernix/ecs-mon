@@ -10,6 +10,20 @@ pip install ecs-mon
 ecs-mon --svc my-service --cluster linux --alb --profile myAWSprofile
 ```
 
+## Using esc-mon with watch
+```shell
+watch -n 10 ecs-mon --svc my-service --cluster linux --alb --profile myAWSprofile
+```
+
+The above command will rerun ecs-mon command every 10 seconds.
+
+#### Installing Watch Command on MacOS
+```shell
+brew install watch
+```
+
+More information about Watch command: http://manpages.ubuntu.com/manpages/bionic/man1/watch.1.html
+
 ## Publishing Updates to PyPi
 
 For the maintainer - to publish an updated version of ssm-search, increment the version number in version.py and run the following:
