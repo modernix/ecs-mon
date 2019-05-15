@@ -97,17 +97,41 @@ def get_svc_alb_healthccheck_info(tg_arn, profile_name = None):
 def list_svc(cluster_n, profile_name = None):
     """list all services from a cluster"""
     client = get_aws_client("ecs", profile_name=profile_name)
+    svc_list = []
     try:
-        response = client.list_services(
-        cluster=cluster_n,
-        maxResults=100
+        # response = client.list_services(
+        # cluster=cluster_n,
+        # maxResults=100
+        # )
+        # if response['serviceArns']:
+        #     print
+        #     for svc in response['serviceArns']:
+        #         print(svc.split("/", 1)[-1])
+        # else:
+        #     print("The provided ECS cluster does not have ECS services.")
+        paginator = client.get_paginator('list_services')
+        page_iterator = paginator.paginate(
+            cluster=cluster_n,
+            PaginationConfig={
+                'MaxItems': 100,
+                'PageSize': 100,
+            }
         )
-        if response['serviceArns']:
-            print
-            for svc in response['serviceArns']:
-                print(svc.split("/", 1)[-1])
-        else:
-            print("The provided ECS cluster does not have ECS services.")
+        for page in page_iterator:
+            print(page['nextToken'])
+            print("\n")
+            #print(page['serviceArns'])
+
+        page_iterator = paginator.paginate(
+            cluster=cluster_n,
+            nextToken= page['nextToken']
+        )
+        for page in page_iterator:
+            for svc in page['serviceArns']:
+                svc_list.append(svc)
+        print(svc_list)
+        print(len(svc_list))
+
     except Exception as error:
         print("Cannot find ECS services from the provided ECS cluster")
         print(error)
@@ -145,18 +169,18 @@ def main():
         print("Please provide an AWS profile or set AWS_PROFILE env")
         sys.exit(1)
     get_aws_account_id(profile_name=args.profile)
-
+    print("cluster name: {}".format(args.cluster))
     if args.svc:
+        print("service name: {}".format(args.svc))
         if args.alb:
             svc_tg_arn = get_svc_alb_tg_arn(args.cluster,args.svc,
                                     profile_name=args.profile)
             alb_info = get_svc_alb_healthccheck_info(svc_tg_arn,
                                             profile_name=args.profile)
-            print("{}://{}{}".format(alb_info['HealthCheckProtocol'].lower(),
-                                alb_info['DNSName'],
-                                alb_info['HealthCheckPath']))
-        print("service name: {}".format(args.svc))
-        print("cluster name: {}".format(args.cluster))
+            print("service url: {}://{}{}".format(
+                    alb_info['HealthCheckProtocol'].lower(),
+                    alb_info['DNSName'],
+                    alb_info['HealthCheckPath']))
         tasks = get_svc_tasks_list(args.cluster, args.svc,
                                     profile_name=args.profile)
         display_svc_tsk(tasks, profile_name=args.profile)
