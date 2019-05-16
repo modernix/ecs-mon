@@ -98,6 +98,7 @@ def list_svc(cluster_n, profile_name = None):
     """list all services from a cluster"""
     client = get_aws_client("ecs", profile_name=profile_name)
     svc_list = []
+    NextToken = None
     try:
         # response = client.list_services(
         # cluster=cluster_n,
@@ -118,19 +119,28 @@ def list_svc(cluster_n, profile_name = None):
             }
         )
         for page in page_iterator:
-            print(page['nextToken'])
-            print("\n")
-            #print(page['serviceArns'])
+            svc_list = page['serviceArns']
+            NextToken = page['nextToken']
 
-        page_iterator = paginator.paginate(
-            cluster=cluster_n,
-            nextToken= page['nextToken']
-        )
-        for page in page_iterator:
-            for svc in page['serviceArns']:
-                svc_list.append(svc)
-        print(svc_list)
-        print(len(svc_list))
+        while NextToken:
+            page_iterator = paginator.paginate(
+                cluster=cluster_n,
+                nextToken= NextToken,
+                PaginationConfig={
+                    'MaxItems': 100,
+                    'PageSize': 100,
+                }
+            )
+            for page in page_iterator:
+                if 'nextToken' in page:
+                    NextToken = page['nextToken']
+                else:
+                    NextToken = None
+                svc_list += page['serviceArns']
+        svc_list.sort()
+        for svc in svc_list:
+            print(svc.split("/", 1)[-1])
+
 
     except Exception as error:
         print("Cannot find ECS services from the provided ECS cluster")
