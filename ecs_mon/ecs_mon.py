@@ -71,7 +71,7 @@ def get_svc_alb_tg_arn(cluster_n, svc_n, profile_name = None):
     try:
         return response['services'][0]['loadBalancers'][0]['targetGroupArn']
     except IndexError as error:
-        print("This service does not connect to a load balanacer.")
+        print("This service does not connect to a load balancer.")
         print(error)
         sys.exit(1)
 
@@ -147,6 +147,38 @@ def list_svc(cluster_n, profile_name = None):
         print(error)
 
 
+def get_dns_records_100x(zone_id, next_token = None, profile_name = None, ):
+    client = get_aws_client("route53", profile_name=profile_name)
+    paginator = client.get_paginator('list_resource_record_sets')
+    NextToken = None
+    dnsMap = {}
+    try:
+
+        source_zone_records = paginator.paginate(
+            HostedZoneId=zone_id,
+            PaginationConfig={
+                'MaxItems': 100,
+                'PageSize': 100,
+                'StartingToken': next_token
+            }
+        )
+        for record_set in source_zone_records:
+            if 'NextRecordName' in record_set:
+                NextToken = record_set['NextRecordName']
+            else:
+                NextToken = None
+            for record in record_set['ResourceRecordSets']:
+                if record['Type'] == 'A':
+                    if 'AliasTarget' in record:
+                        dnsMap[record['AliasTarget']['DNSName'][:-1]] = record['Name'][:-1]
+                    #print(record['ResourceRecords'][0]['Value'])
+        return {'nextToken': NextToken, 'dnsMap': dnsMap}
+                
+    except Exception as error:
+        print('An error occurred getting source zone records:')
+        print(str(error))
+        raise
+
 def get_aws_account_id(profile_name = None):
     """print aws account"""
     client = get_aws_client("sts", profile_name=profile_name)
@@ -161,6 +193,8 @@ def parse_args():
                         help='The AWS profile to run this request under.' )
     parser.add_argument('--svc',
                         help='ecs svc name')
+    parser.add_argument('--dns',
+                        help='route 53 zone id')
     parser.add_argument('--cluster', required=True,
                         help='ecs cluster name')
     parser.add_argument('--alb', action='store_true',
@@ -171,6 +205,7 @@ def parse_args():
 
 def main():
     args = parse_args()
+    alb_info = None
     if not args.profile:
       if 'AWS_PROFILE' in os.environ:
         args.profile=os.environ['AWS_PROFILE']
@@ -196,6 +231,20 @@ def main():
         display_svc_tsk(tasks, profile_name=args.profile)
     else:
         list_svc(args.cluster, profile_name=args.profile)
+    
+    if args.dns and args.svc:
+        more = get_dns_records_100x(args.dns, None, profile_name=args.profile)
+        while more['nextToken']:
+            if alb_info['DNSName'] in more['dnsMap']:
+                print("R53 URL: {}://{}{}".format(
+                    alb_info['HealthCheckProtocol'].lower(),
+                    more['dnsMap'][alb_info['DNSName']],
+                    alb_info['HealthCheckPath']
+                    )
+                )
+                break
+            more = get_dns_records_100x(args.dns, more['nextToken'], profile_name=args.profile)
+            print(more['dnsMap'])
 
 if __name__ == "__main__":
     main()
