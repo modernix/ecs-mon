@@ -120,7 +120,10 @@ def list_svc(cluster_n, profile_name = None):
         )
         for page in page_iterator:
             svc_list = page['serviceArns']
-            NextToken = page['nextToken']
+            if 'nextToken' in page:
+                NextToken = page['nextToken']
+            else:
+                NextTone = None
 
         while NextToken:
             page_iterator = paginator.paginate(
@@ -148,6 +151,7 @@ def list_svc(cluster_n, profile_name = None):
 
 
 def get_dns_records_100x(zone_id, next_token = None, profile_name = None, ):
+    """Return 100 DNS Records"""
     client = get_aws_client("route53", profile_name=profile_name)
     paginator = client.get_paginator('list_resource_record_sets')
     NextToken = None
@@ -170,14 +174,15 @@ def get_dns_records_100x(zone_id, next_token = None, profile_name = None, ):
             for record in record_set['ResourceRecordSets']:
                 if record['Type'] == 'A':
                     if 'AliasTarget' in record:
-                        dnsMap[record['AliasTarget']['DNSName'][:-1]] = record['Name'][:-1]
-                    #print(record['ResourceRecords'][0]['Value'])
+                        dnsMap[record['AliasTarget']['DNSName'][:-1]] \
+                        = record['Name'][:-1]
         return {'nextToken': NextToken, 'dnsMap': dnsMap}
                 
     except Exception as error:
         print('An error occurred getting source zone records:')
         print(str(error))
         raise
+
 
 def get_aws_account_id(profile_name = None):
     """print aws account"""
@@ -234,6 +239,14 @@ def main():
     
     if args.dns and args.svc:
         more = get_dns_records_100x(args.dns, None, profile_name=args.profile)
+        if more['nextToken'] is None:
+            if alb_info['DNSName'] in more['dnsMap']:
+                print("R53 URL: {}://{}{}".format(
+                    alb_info['HealthCheckProtocol'].lower(),
+                    more['dnsMap'][alb_info['DNSName']],
+                    alb_info['HealthCheckPath']
+                    )
+                )    
         while more['nextToken']:
             if alb_info['DNSName'] in more['dnsMap']:
                 print("R53 URL: {}://{}{}".format(
@@ -243,8 +256,11 @@ def main():
                     )
                 )
                 break
-            more = get_dns_records_100x(args.dns, more['nextToken'], profile_name=args.profile)
-            print(more['dnsMap'])
+            more = get_dns_records_100x(args.dns,
+                                        more['nextToken'],
+                                        profile_name=args.profile
+                                    )
+
 
 if __name__ == "__main__":
     main()
