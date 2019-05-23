@@ -39,11 +39,11 @@ def get_tsk_def_img_tag(tsk, profile_name = None):
     return img_tag
 
 
-def display_svc_tsk(task_list, profile_name = None):
+def display_svc_tsk(task_list, cluster, profile_name = None):
     """Display svc's tasks table"""
     client = get_aws_client("ecs", profile_name=profile_name)
     response = client.describe_tasks(
-    cluster='linux-int',
+    cluster=cluster,
     tasks=task_list
     )
     tsk_table = PrettyTable(['Task ID', 'Task Definition', 
@@ -100,16 +100,6 @@ def list_svc(cluster_n, profile_name = None):
     svc_list = []
     NextToken = None
     try:
-        # response = client.list_services(
-        # cluster=cluster_n,
-        # maxResults=100
-        # )
-        # if response['serviceArns']:
-        #     print
-        #     for svc in response['serviceArns']:
-        #         print(svc.split("/", 1)[-1])
-        # else:
-        #     print("The provided ECS cluster does not have ECS services.")
         paginator = client.get_paginator('list_services')
         page_iterator = paginator.paginate(
             cluster=cluster_n,
@@ -223,7 +213,7 @@ def main():
     if args.svc:
         print("service name: {}".format(args.svc))
         if args.alb:
-            svc_tg_arn = get_svc_alb_tg_arn(args.cluster,args.svc,
+            svc_tg_arn = get_svc_alb_tg_arn(args.cluster, args.svc,
                                     profile_name=args.profile)
             alb_info = get_svc_alb_healthccheck_info(svc_tg_arn,
                                             profile_name=args.profile)
@@ -233,7 +223,7 @@ def main():
                     alb_info['HealthCheckPath']))
         tasks = get_svc_tasks_list(args.cluster, args.svc,
                                     profile_name=args.profile)
-        display_svc_tsk(tasks, profile_name=args.profile)
+        display_svc_tsk(tasks, args.cluster, profile_name=args.profile)
     else:
         list_svc(args.cluster, profile_name=args.profile)
     
